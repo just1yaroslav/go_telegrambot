@@ -2,37 +2,48 @@ package main
 
 import (
 	"flag"
-	"github.com/just1yaroslav/go_telegrambot/clients/telegram"
+	tgClient "github.com/just1yaroslav/go_telegrambot/clients/telegram"
+	"github.com/just1yaroslav/go_telegrambot/consumer/event-consumer"
+	"github.com/just1yaroslav/go_telegrambot/events/telegram"
+	"github.com/just1yaroslav/go_telegrambot/storage/files"
 	"log"
 )
 
 // Так же можно получать из флага
 const (
-	tgBotHost = "api.telegram.org"
+	tgBotHost   = "api.telegram.org"
+	storagePath = "storage"
+	batchSize   = 100
 )
 
 func main() {
-	// tgCleint
-	tgClient := telegram.New(tgBotHost, mustToken())
+	eventsProcessor := telegram.New(
+		tgClient.New(tgBotHost, mustToken()),
+		files.New(storagePath),
+	)
 
-	// fetcher
+	log.Print("server has been started!")
 
-	// processor
+	consumer := event_consumer.New(eventsProcessor, eventsProcessor, batchSize)
 
-	// consumer.start
+	// Updated call to Start()
+	if err := consumer.Start(); err != nil {
+		log.Fatal("service is stopped", err)
+	}
 }
 
-func mustToken() (string, error) {
+func mustToken() string {
 	token := flag.String(
-		"8128506763:AAHg0pxw5tprVXCnznRkBBU6uuZKmqrhLmM",
+		"tg-bot-token",
 		"",
-		"token for telegram bot",
+		"token for access to telegram bot",
 	)
 
 	flag.Parse()
 
 	if *token == "" {
-		log.Fatal("bot no have token-key")
+		log.Fatal("token is not specified")
 	}
 
+	return *token
 }

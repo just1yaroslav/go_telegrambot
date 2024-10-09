@@ -19,11 +19,12 @@ type Client struct {
 }
 
 const (
-	getUpdateMethod = "getUpdate"
+	getUpdateMethod   = "getUpdate"
+	sendMessageMethod = "sendMessage"
 )
 
-func New(host string, token string) Client {
-	return Client{
+func New(host string, token string) *Client {
+	return &Client{
 		host:     host,
 		basePath: newBasePath(token),
 		client:   http.Client{},
@@ -47,6 +48,7 @@ func (c *Client) Update(offset, limit int) (updates []Update, err error) {
 	}
 
 	var res UpdateResponse
+
 	if err := json.Unmarshal(data, &res); err != nil {
 		return nil, err
 	}
@@ -59,7 +61,7 @@ func (c *Client) SendMessage(chatId int, text string) error {
 	q.Add("chat_id", strconv.Itoa(chatId))
 	q.Add("text", text)
 
-	_, err := c.doRequest(getUpdateMethod, q)
+	_, err := c.doRequest(sendMessageMethod, q)
 	if err != nil {
 		return e.Wrap("message cant send", err)
 	}
@@ -68,7 +70,7 @@ func (c *Client) SendMessage(chatId int, text string) error {
 }
 
 func (c *Client) doRequest(method string, query url.Values) (data []byte, err error) {
-	defer func() { err = e.WrapIfErr("cant using do request", err) }()
+	defer func() { err = e.WrapIfErr("can't do request", err) }()
 
 	u := url.URL{
 		Scheme: "https",
@@ -87,7 +89,6 @@ func (c *Client) doRequest(method string, query url.Values) (data []byte, err er
 	if err != nil {
 		return nil, err
 	}
-
 	defer func() { _ = resp.Body.Close() }()
 
 	body, err := io.ReadAll(resp.Body)
